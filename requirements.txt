@@ -1,0 +1,5 @@
+Scrapy
+lxml
+cssselect
+pymongo
+requests
