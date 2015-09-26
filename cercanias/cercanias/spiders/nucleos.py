@@ -7,7 +7,7 @@ class NucleosSpider(scrapy.Spider):
     name = "nucleos"
     allowed_domains = ["http://www.renfe.com/viajeros/cercanias/"]
     start_urls = (
-        'http://www.http://www.renfe.com/viajeros/cercanias/',
+        'http://www.renfe.com/viajeros/cercanias/',
     )
 
     def parse(self, response):
@@ -20,6 +20,21 @@ class NucleosSpider(scrapy.Spider):
             if not nucleo_name_array or not isinstance(nucleo_name_array, list) or len(nucleo_name_array) <= 0:
                 continue
 
+            nucleo_name = nucleo_name_array[0]
+
+            # Get link to image
+            nucleo_img_array = nucleo_div.xpath('p/a/img/@src').extract()
+            if not nucleo_img_array or not isinstance(nucleo_img_array) or len(nucleo_img_array) <= 0:
+                continue
+
+            nucleo_img_link = nucleo_img_array[0]
+
+            # Build the item to send it to callback
+            item = NucleosItem()
+
+            item['nucleo_name'] = nucleo_name
+            item['nucleo_img_link'] = nucleo_img_link
+
 
             # Get link to nucleo page
             nucleo_link_array = nucleo_div.xpath('h3/a/@href').extract()
@@ -28,19 +43,25 @@ class NucleosSpider(scrapy.Spider):
 
             nucleo_link = nucleo_link_array[0]
 
-            # Follow the link to get nucleo id
-            nucleo_url = response.urljoin(nucleo_link)
+            # Load the page pointed by the link using a callback
+            request = scrapy.Request(nucleo_url, callback = parse_nucleo_url)
+            
+            # Pass addditional arguments to callback
+            request.meta['item'] = item
 
-            # Get link to image
-            nucleo_img_array = nucleo_div.xpath('p/a/img/@src').extract()
-
-            # TODO: To get the nucleo id, we need to follow nucleo_url
-
-            #yield scrapy.Request(nucleo_url, callback=self.parse_nucleo_url)
-
+            return request
     
     
-    def parse_nucleo_url(self, response)
-        pass
+    def parse_nucleo_url(self, response):
+        item = response.meta['item']
 
+        nucleo_id_array = response.xpath('//iframe[@class="marco"]/@src').extract()
+        if not nucleo_id_array or not isinstance(nucleo_id_array, list) or len(nucleo_id_array) <= 0:
+            return None
+
+        nucleo_id = nucleo_id__array[0]
+
+        item['nucleo_id'] = nucleo_id
+
+        return item
 
