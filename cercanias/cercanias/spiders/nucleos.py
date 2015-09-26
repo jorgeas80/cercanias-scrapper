@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import scrapy
 from cercanias.items import NucleosItem 
+import re
 
 
 class NucleosSpider(scrapy.Spider):
@@ -63,7 +64,16 @@ class NucleosSpider(scrapy.Spider):
         if not nucleo_id_array or not isinstance(nucleo_id_array, list) or len(nucleo_id_array) <= 0:
             yield None
 
-        nucleo_id = nucleo_id_array[0]
+        iframe_url = nucleo_id_array[0]
+
+        # Extract nucleo id from iframe url using regex
+
+        try: 
+            value_regex = re.compile("(?<=NUCLEO=)(?P<value>.*?)(?=&)")
+            m = value_regex.search(iframe_url)
+            nucleo_id = m.group('value')
+        except Exception:
+            nucleo_id = ""
 
         item['nucleo_id'] = nucleo_id
 
