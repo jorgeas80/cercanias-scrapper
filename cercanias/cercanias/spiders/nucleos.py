@@ -11,6 +11,10 @@ class NucleosSpider(scrapy.Spider):
         'http://www.renfe.com/viajeros/cercanias/',
     )
 
+    def __init__(self, mongodb_uri='', mongodb_name=''):
+        self.mongodb_uri = mongodb_uri
+        self.mongodb_name = mongodb_name
+
     def parse(self, response):
 
         # Get nucleos by columns
