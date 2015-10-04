@@ -89,8 +89,24 @@ class NucleosSpider(scrapy.Spider):
     def parse_nucleo_stations(self, response):
         item = response.meta['item']
 
-        nucleo_stations_array = response.xpath('//div[@id="contenedor"]/h1/select[@name="o"]').extract()
-        item['nucleo_stations'] = nucleo_stations_array
+        nucleo_stations_select = response.xpath('//div[@id="contenedor"]/h1/select[@name="o"]')
+
+        nucleo_stations_array = nucleo_stations_select.xpath('option')
+        if not nucleo_stations_array or not isinstance(nucleo_stations_array, list) or len(nucleo_stations_array) <= 0:
+            yield None
+
+        nucleo_stations = nucleo_stations_array[0]
+
+        stations = []
+        for n_array in nucleo_stations_array:
+            n_stations = n_array.xpath('text()').extract()
+
+            if not n_stations or not isinstance(n_stations, list) or len(n_stations) <= 0:
+                continue
+
+            stations.append(n_stations[0].strip().encode('utf8'))
+
+        item['nucleo_stations'] = stations
 
         yield item
 
