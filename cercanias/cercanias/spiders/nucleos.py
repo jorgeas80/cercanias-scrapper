@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 import scrapy
-from cercanias.items import NucleosItem 
+from cercanias.items import NucleosItem
 import re
 
 
 class NucleosSpider(scrapy.Spider):
     name = "nucleos"
-    #allowed_domains = ["http://www.renfe.com"]
+    allowed_domains = ["renfe.com"]
     start_urls = (
         'http://www.renfe.com/viajeros/cercanias/',
     )
@@ -15,7 +15,7 @@ class NucleosSpider(scrapy.Spider):
 
         # Get nucleos by columns
         for nucleo_div in response.xpath('//div[@id="colB"]/div[@class="colB1" or @class="colB2" or @class="colB3"]'):
-            
+
             # Get nucleo name
             nucleo_name_array = nucleo_div.xpath('h3/a/@title').extract()
             if not nucleo_name_array or not isinstance(nucleo_name_array, list) or len(nucleo_name_array) <= 0:
@@ -29,7 +29,7 @@ class NucleosSpider(scrapy.Spider):
                 continue
 
             nucleo_img_link = nucleo_img_array[0]
-            
+
             # Dirty hack!
             nucleo_img_link = nucleo_img_link.replace('../..', 'http://www.renfe.com')
 
@@ -49,26 +49,27 @@ class NucleosSpider(scrapy.Spider):
 
             # Load the page pointed by the link using a callback
             request = scrapy.Request(nucleo_link, callback = self.parse_nucleo_url)
-            
+
             # Pass addditional arguments to callback
             request.meta['item'] = item
 
             yield request
 
 
-    
+
     def parse_nucleo_url(self, response):
         item = response.meta['item']
 
-        nucleo_id_array = response.xpath('//iframe[@class="marco"]/@src').extract()
+        nucleo_iframe = response.xpath('//iframe[@class="marco"]')
+
+        nucleo_id_array = nucleo_iframe.xpath('@src').extract()
         if not nucleo_id_array or not isinstance(nucleo_id_array, list) or len(nucleo_id_array) <= 0:
             yield None
 
         iframe_url = nucleo_id_array[0]
 
         # Extract nucleo id from iframe url using regex
-
-        try: 
+        try:
             value_regex = re.compile("(?<=NUCLEO=)(?P<value>.*?)(?=&)")
             m = value_regex.search(iframe_url)
             nucleo_id = m.group('value')
@@ -76,6 +77,20 @@ class NucleosSpider(scrapy.Spider):
             nucleo_id = ""
 
         item['nucleo_id'] = nucleo_id
+
+        # Parse nucleo stations from url
+        request = scrapy.Request(iframe_url, callback=self.parse_nucleo_stations)
+
+        request.meta['item'] = item
+
+        yield request
+
+
+    def parse_nucleo_stations(self, response):
+        item = response.meta['item']
+
+        nucleo_stations_array = response.xpath('//div[@id="contenedor"]/h1/select[@name="o"]').extract()
+        item['nucleo_stations'] = nucleo_stations_array
 
         yield item
 

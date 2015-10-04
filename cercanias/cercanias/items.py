@@ -14,3 +14,4 @@ class NucleosItem(scrapy.Item):
     nucleo_id = scrapy.Field()
     nucleo_name = scrapy.Field()
     nucleo_img_link = scrapy.Field()
+    nucleo_stations = scrapy.Field()
